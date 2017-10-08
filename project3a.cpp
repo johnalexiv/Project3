@@ -16,9 +16,12 @@ int main()
     std::vector<Process> processes;
     processes = parseAndCreateProcesses(processesInfo);
 
-    debugPrint(processes);
+    StartQueue startQueue;
+    putProcessessIntoStartQueue(startQueue, processes);
 
-    runProcesses();
+    debugPrint(startQueue, processes);
+
+    runProcesses(startQueue, processes);
 
     return 0;
 }
@@ -35,41 +38,6 @@ std::vector<std::string> readInput()
     }
 
     return processesInfo;
-}
-
-void debugPrint(std::vector<Process> processes)
-{
-    int i = 0;
-    while( i < processes.size() )
-    {
-        std::cout << "PID: " << processes[i].getPID() << std::endl;
-        std::cout << "Priority: " << processes[i].getPriority() << std::endl;
-        std::cout << "Arrival Time: " << processes[i].getArrivalTime() << std::endl;
-        int j = 0;
-        std::cout << "CPU Bursts: ";
-        std::vector<int> cpuBursts = processes[i].getCpuBursts();
-        while( j < processes[i].getCpuBursts().size() )
-        {
-            std::cout << cpuBursts[j++] << " ";
-        }
-        std::cout << std::endl;
-
-        j = 0;
-        std::cout << "IO Bursts: ";
-        std::vector<int> ioBursts = processes[i].getIoBursts();
-        while( j < processes[i].getIoBursts().size() )
-        {
-            std::cout << ioBursts[j++] << " ";
-        }
-        std::cout << std::endl << std::endl;
-        i++;
-    }
-}
-
-void runProcesses()
-{
-    int clock = 0;
-
 }
 
 std::vector<Process> parseAndCreateProcesses(std::vector<std::string> processInfo)
@@ -121,6 +89,62 @@ Process createProcess(int pid, std::vector<int> processDetails)
                             cpuBursts,
                             ioBursts);
     return process;
+}
+
+void putProcessessIntoStartQueue(StartQueue &startQueue, std::vector<Process> processes)
+{
+    int i = 0;
+    while( i < processes.size() )
+    {
+        startQueue.push(processes[i++]);
+    }
+}
+
+
+void runProcesses(StartQueue startQueue, std::vector<Process> processes)
+{
+    int clock = 0;
+    while(true)
+    {
+        break;
+    }
+}
+
+void debugPrint(StartQueue startQueue, std::vector<Process> processes)
+{
+    while( !startQueue.empty() )
+    {
+        Process temp = startQueue.top();
+        std::cout << "PID: " << temp.getPID() << ", Arrival Time: " << temp.getArrivalTime() << std::endl;
+        startQueue.pop();
+    }
+
+    int i = 0;
+    while( i < processes.size() )
+    {
+        std::cout << "PID: " << processes[i].getPID() << std::endl;
+        std::cout << "Priority: " << processes[i].getPriority() << std::endl;
+        std::cout << "Arrival Time: " << processes[i].getArrivalTime() << std::endl;
+        std::cout << "Time Slice: " << processes[i].getTimeSlice() << std::endl;
+        int j = 0;
+        std::cout << "CPU Bursts: ";
+        std::vector<int> cpuBursts = processes[i].getCpuBursts();
+        while( j < processes[i].getCpuBursts().size() )
+        {
+            std::cout << cpuBursts[j++] << " ";
+        }
+        std::cout << std::endl;
+
+        j = 0;
+        std::cout << "IO Bursts: ";
+        std::vector<int> ioBursts = processes[i].getIoBursts();
+        while( j < processes[i].getIoBursts().size() )
+        {
+            std::cout << ioBursts[j++] << " ";
+        }
+        std::cout << std::endl << std::endl;
+        i++;
+    }
 }
 
 //  read input 

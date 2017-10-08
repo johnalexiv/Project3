@@ -16,12 +16,12 @@ Process::Process(int pid,
 {
     setPID(pid);
     setPriority(calculateOriginalPriority(nice));
+    setTimeSlice(calculateTimeSlice(getPriority()));
     setArrivalTime(arrivalTime);
     setCpuBursts(cpuBursts);
     setIoBursts(ioBursts);
     setStartTime(0);
     setEndTime(0);
-    setTimeSlice(0);
     setCurrentCpuBurst(0);
     setCurrentIoBurst(0);
     setCurrentState(ARRIVED);
@@ -139,19 +139,20 @@ void Process::setCurrentIoBurst(int currentIoBurst)
 
 int Process::calculateOriginalPriority(int nice)
 {
-    return (int)((((nice + 20)/39.0)*30 + 0.5) + 105);
+    return (int)( ( ( ( nice + 20 ) / 39.0 ) * 30 + 0.5 ) + 105 );
 }
 
+// fix this
 int Process::caluclatePriority(int priority)
 {
     int bonus;
 
-    return (int)(priority + bonus);
+    return (int)( priority + bonus );
 }
 
 int Process::calculateTimeSlice(int priority)
 {
-    return (int)(((1 - priority/150.0)*395 + 0.5) + 5);
+    return (int)( ( ( 1 - priority / 150.0 ) * 395 + 0.5 ) + 5 );
 }
 
 
