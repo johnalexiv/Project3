@@ -6,219 +6,121 @@
 //  Copyright © 2017 John Alexander. All rights reserved.
 //
 
-#include <iostream>
-#include <vector>
-#include <sstream>
-#include <string>
-#include <queue>
-
-class Process
-{
-public:
-    Process(int pid,
-            int nice, 
-            int arrivalTime, 
-            std::vector<int> cpuBursts,
-            std::vector<int> ioBursts);
-
-    int getPID() { return _pid; }
-    void setPID(int pid) { _pid = pid; }
-
-    int getArrivalTime() { return _arrivalTime; }
-    void setArrivalTime(int arrivalTime) { _arrivalTime = arrivalTime; }
-
-    int getStartTime() { return _startTime; }
-    void setStartTime(int startTime) { _startTime = startTime; }
-
-    int getEndTime() { return _endTime; }
-    void setEndTime(int endTime) { _endTime = endTime; }
-
-    int getPriority() { return _priority; }
-    void setPriority(int priority) { _priority = priority; }
-
-    int getTimeSlice() { return _timeSlice; }
-    void setTimeSlice(int timeSlice) { _timeSlice = timeSlice; }
-
-    int getCurrentState() { return _currentState; }
-    void setCurrentState(int currentState) { _currentState = currentState; }
-
-    std::vector<int> _cpuBursts;
-    std::vector<int> _ioBursts;
-
-private:
-    int calculateOriginalPriority(int);
-    int caluclatePriority(int);
-    int calculateTimeSlice(int);
- 
-private:
-    int _pid;
-    int _arrivalTime;
-    int _startTime;
-    int _endTime;
-    int _priority;
-    int _timeSlice;
-    int _currentState;
-
-    int _currentCpuBurst;
-    int _currentIoBurst;
-    
-
-    enum State
-    {
-        ARRIVED,
-        START,
-        ACTIVE,
-        EXPIRED,
-        IO,
-        FINISHED,
-        CPU,
-        NUMOFSTATES
-    };
-};
-
-Process::Process(int pid,
-                int nice, 
-                int arrivalTime, 
-                std::vector<int> cpuBursts,
-                std::vector<int> ioBursts)
-{
-    _pid = pid;
-    _priority = calculateOriginalPriority(nice);
-    _arrivalTime = arrivalTime;
-    _cpuBursts = cpuBursts;
-    _ioBursts = ioBursts;
-    _arrivalTime = 0;
-    _startTime = 0;
-    _endTime = 0;
-    _timeSlice = 0;
-    _currentCpuBurst = 0;
-    _currentIoBurst = 0;
-    _currentState = ARRIVED;
-}
-
-int Process::calculateOriginalPriority(int nice)
-{
-    return (int)((((nice + 20)/39.0)*30 + 0.5) + 105);
-}
-
-int Process::caluclatePriority(int priority)
-{
-    int bonus;
-
-    return (int)(priority + bonus);
-}
-
-int Process::calculateTimeSlice(int priority)
-{
-    return (int)(((1 - priority/150.0)*395 + 0.5) + 5);
-}
-
-void readInput();
-void debugPrint();
-std::vector<int> getProcessDetails(std::string);
-void seperateProcesses(std::vector<std::string>);
-void createProcess(std::vector<int>);
-
-std::vector<Process> processes;
-
+#include "project3a.h"
 
 int main()
 {
-    readInput();
+    std::vector<std::string> processesInfo;
+    processesInfo = readInput();
 
-    debugPrint();
+    std::vector<Process> processes;
+    processes = parseAndCreateProcesses(processesInfo);
+
+    debugPrint(processes);
+
+    runProcesses();
 
     return 0;
 }
 
-void readInput()
+std::vector<std::string> readInput()
 {
-    std::vector<std::string> processInfo;
-    std::string str;
-    while( getline(std::cin, str) )
+    std::vector<std::string> processesInfo;
+    std::string line;
+    while( getline(std::cin, line) )
     {
-        if ( str.find("***") != std::string::npos )
+        if ( line.find("***") != std::string::npos )
             break;
-        processInfo.push_back(str);
+        processesInfo.push_back(line);
     }
 
-    seperateProcesses(processInfo);
+    return processesInfo;
 }
 
-void debugPrint()
+void debugPrint(std::vector<Process> processes)
 {
     int i = 0;
     while( i < processes.size() )
     {
         std::cout << "PID: " << processes[i].getPID() << std::endl;
         std::cout << "Priority: " << processes[i].getPriority() << std::endl;
-
+        std::cout << "Arrival Time: " << processes[i].getArrivalTime() << std::endl;
         int j = 0;
         std::cout << "CPU Bursts: ";
-        while( j < processes[i]._cpuBursts.size() )
+        std::vector<int> cpuBursts = processes[i].getCpuBursts();
+        while( j < processes[i].getCpuBursts().size() )
         {
-            std::cout << processes[i]._cpuBursts[j++] << " ";
+            std::cout << cpuBursts[j++] << " ";
         }
         std::cout << std::endl;
 
         j = 0;
         std::cout << "IO Bursts: ";
-        while( j < processes[i]._ioBursts.size() )
+        std::vector<int> ioBursts = processes[i].getIoBursts();
+        while( j < processes[i].getIoBursts().size() )
         {
-            std::cout << processes[i]._ioBursts[j++] << " ";
+            std::cout << ioBursts[j++] << " ";
         }
         std::cout << std::endl << std::endl;
         i++;
     }
 }
 
-void seperateProcesses(std::vector<std::string> processInfo)
+void runProcesses()
 {
-    int i = 0;
-    std::vector<int> processDetails;
-    while( i < processInfo.size() )
-    {
-        processDetails = getProcessDetails(processInfo[i++]);
+    int clock = 0;
 
-        createProcess(processDetails);
+}
+
+std::vector<Process> parseAndCreateProcesses(std::vector<std::string> processInfo)
+{
+    int pid = 0;
+    std::vector<int> processDetails;
+    std::vector<Process> processes;
+    while( pid < processInfo.size() )
+    {
+        processDetails = getProcessDetails(processInfo[pid]);
+        processes.push_back(createProcess(pid, processDetails));
+        pid++;
     }
+
+    return processes;
 }
 
 std::vector<int> getProcessDetails(std::string details)
 {
-    std::string str;
-    std::istringstream f(details);
+    std::string token;
+    std::istringstream buffer(details);
     std::vector<int> values;
-    while( getline(f, str, ' ') )
+    while( getline(buffer, token, ' ') )
     {
-        values.push_back(std::stoi(str));
+        values.push_back(std::stoi(token));
     }
     return values;
 }
 
-void createProcess(std::vector<int> processDetails)
+Process createProcess(int pid, std::vector<int> processDetails)
 {
-    int pid = processes.size();
     int nice = processDetails[0];
     int arrivalTime = processDetails[1];
     int numCpuBursts = processDetails[2];
     std::vector<int> cpuBursts;
     std::vector<int> ioBursts;
 
-    int i = 3;
-    while( i < processDetails.size() )
+    int burst = 3;  // first CPU burst
+    while( burst < processDetails.size() )
     {
-        if ( i % 2 == 1 )
-            cpuBursts.push_back(processDetails[i++]);
+        if ( burst % 2 == 1 )
+            cpuBursts.push_back(processDetails[burst++]);
         else 
-            ioBursts.push_back(processDetails[i++]);
+            ioBursts.push_back(processDetails[burst++]);
     }
     Process process = Process(pid,
                             nice,
                             arrivalTime,
                             cpuBursts,
                             ioBursts);
-    processes.push_back(process);
+    return process;
 }
 
 //  read input 
