@@ -41,7 +41,8 @@ void Scheduler::initializeScheduler(std::vector<Process> processes)
 // Start
 Process Scheduler::startTop()
 {
-    return _startQueue->top();
+    if ( !isStartEmpty() )
+        return _startQueue->top();
 }
 
 void Scheduler::startPop()
@@ -62,7 +63,8 @@ bool Scheduler::isStartEmpty()
 // Active
 Process Scheduler::activeTop()
 {
-    return _activeQueue->top();
+    if ( !isActiveEmpty() )
+        return _activeQueue->top();
 }
 
 void Scheduler::activePop()
@@ -83,7 +85,8 @@ bool Scheduler::isActiveEmpty()
 // Expired
 Process Scheduler::expiredTop()
 {
-    return _expiredQueue->top();
+    if ( !isExpiredEmpty() )
+        return _expiredQueue->top();
 }
 
 void Scheduler::expiredPop()
@@ -104,7 +107,8 @@ bool Scheduler::isExpiredEmpty()
 // IO
 Process Scheduler::ioTop()
 {
-    return _ioQueue->top();
+    if ( !isIoEmpty() )
+        return _ioQueue->top();
 }
 
 void Scheduler::ioPop()
@@ -125,7 +129,8 @@ bool Scheduler::isIoEmpty()
 // Finished
 Process Scheduler::finishedTop()
 {
-    return _finishedQueue->top();
+    if ( !isFinishedEmpty() )
+        return _finishedQueue->top();
 }
 
 void Scheduler::finishedPop()
@@ -146,7 +151,8 @@ bool Scheduler::isFinishedEmpty()
 // CPU
 Process Scheduler::cpuTop()
 {
-    return _cpu->front();
+    if ( !isCpuEmpty() )
+        return _cpu->front();
 }
 
 void Scheduler::cpuPop()
@@ -180,6 +186,38 @@ void Scheduler::incrementClock()
     _clock++;
 }
 
+void Scheduler::decrementTimeSlices()
+{
+    decrementIoTimeSlices();
+    decrementCpuTimeSlice();
+}
+
+void Scheduler::decrementIoTimeSlices()
+{
+    int i = 0;
+    std::vector<Process> processes;
+    while ( !isIoEmpty() )
+    {
+        processes[i++] = ioTop();
+        ioPop(); 
+    }
+    for( i = 0; i < processes.size(); i++ )
+    {
+        processes[i].decrementTimeSlice();
+        ioPush(processes[i]);
+    }
+}
+
+void Scheduler::decrementCpuTimeSlice()
+{
+    if ( !isCpuEmpty() )
+    {
+        Process process = cpuTop();
+        cpuPop();
+        process.decrementTimeSlice();
+        cpuPush(process);
+    }
+}
 
 
 

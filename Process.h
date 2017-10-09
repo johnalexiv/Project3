@@ -37,6 +37,7 @@ public:
 
     int getTimeSlice();
     void setTimeSlice(int);
+    void decrementTimeSlice();
 
     std::vector<int> getCpuBursts();
     void setCpuBursts(std::vector<int>);

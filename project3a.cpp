@@ -29,7 +29,7 @@ std::vector<std::string> readInput()
 {
     std::vector<std::string> processesInfo;
     std::string line;
-    while( getline(std::cin, line) )
+    while ( getline(std::cin, line) )
     {
         if ( line.find("***") != std::string::npos )
             break;
@@ -44,7 +44,7 @@ std::vector<Process> parseAndCreateProcesses(std::vector<std::string> processInf
     int pid = 0;
     std::vector<int> processDetails;
     std::vector<Process> processes;
-    while( pid < processInfo.size() )
+    while ( pid < processInfo.size() )
     {
         processDetails = getProcessDetails(processInfo[pid]);
         processes.push_back(createProcess(pid, processDetails));
@@ -59,7 +59,7 @@ std::vector<int> getProcessDetails(std::string details)
     std::string token;
     std::istringstream buffer(details);
     std::vector<int> values;
-    while( getline(buffer, token, ' ') )
+    while ( getline(buffer, token, ' ') )
     {
         values.push_back(std::stoi(token));
     }
@@ -75,7 +75,7 @@ Process createProcess(int pid, std::vector<int> processDetails)
     std::vector<int> ioBursts;
 
     int burst = 3;  // first CPU burst
-    while( burst < processDetails.size() )
+    while ( burst < processDetails.size() )
     {
         if ( burst % 2 == 1 )
             cpuBursts.push_back(processDetails[burst++]);
@@ -92,7 +92,7 @@ Process createProcess(int pid, std::vector<int> processDetails)
 
 void runProcesses(Scheduler &scheduler)
 {
-    while(scheduler.getClock() < 1000)
+    while ( scheduler.getClock() < 1000 )
     {
         // insert process into active queue if arriveTime == clock
         checkArrivingProcesses(scheduler);
@@ -108,9 +108,9 @@ void runProcesses(Scheduler &scheduler)
         checkPreemptRequired(scheduler);
 
         // decrement the timeslice of the process in the CPU
-
         // decrement the timeslice of IO burst for all IO processes
-
+        scheduler.decrementTimeSlices();
+        
         // if there is a process in cpu
             
             // if process in cpu is done with cpu burst
@@ -154,7 +154,7 @@ void checkArrivingProcesses(Scheduler &scheduler)
         return;
 
     Process currentProcess = scheduler.startTop();
-    while( currentProcess.getArrivalTime() == scheduler.getClock() )
+    while ( currentProcess.getArrivalTime() == scheduler.getClock() )
     {
         scheduler.activePush(currentProcess);
         scheduler.startPop();
@@ -178,12 +178,23 @@ void updateCPU(Scheduler &scheduler)
 
 void checkPreemptRequired(Scheduler &scheduler)
 {
-
+    if ( !scheduler.isActiveEmpty() && !scheduler.isCpuEmpty() )
+    {
+        Process activeProcess = scheduler.activeTop();
+        Process cpuProcess = scheduler.cpuTop();
+        if ( activeProcess.getPriority() < cpuProcess.getPriority() )
+        {
+            scheduler.cpuPop();
+            scheduler.activePop();
+            scheduler.activePush(cpuProcess);
+            scheduler.cpuPush(activeProcess);
+        }
+    }
 }
 
 void debugPrint(StartQueue startQueue, std::vector<Process> processes)
 {
-    while( !startQueue.empty() )
+    while ( !startQueue.empty() )
     {
         Process temp = startQueue.top();
         std::cout << "PID: " << temp.getPID() << ", Arrival Time: " << temp.getArrivalTime() << std::endl;
@@ -191,7 +202,7 @@ void debugPrint(StartQueue startQueue, std::vector<Process> processes)
     }
 
     int i = 0;
-    while( i < processes.size() )
+    while ( i < processes.size() )
     {
         std::cout << "PID: " << processes[i].getPID() << std::endl;
         std::cout << "Priority: " << processes[i].getPriority() << std::endl;
@@ -200,7 +211,7 @@ void debugPrint(StartQueue startQueue, std::vector<Process> processes)
         int j = 0;
         std::cout << "CPU Bursts: ";
         std::vector<int> cpuBursts = processes[i].getCpuBursts();
-        while( j < processes[i].getCpuBursts().size() )
+        while ( j < processes[i].getCpuBursts().size() )
         {
             std::cout << cpuBursts[j++] << " ";
         }
@@ -209,7 +220,7 @@ void debugPrint(StartQueue startQueue, std::vector<Process> processes)
         j = 0;
         std::cout << "IO Bursts: ";
         std::vector<int> ioBursts = processes[i].getIoBursts();
-        while( j < processes[i].getIoBursts().size() )
+        while ( j < processes[i].getIoBursts().size() )
         {
             std::cout << ioBursts[j++] << " ";
         }
@@ -218,43 +229,11 @@ void debugPrint(StartQueue startQueue, std::vector<Process> processes)
     }
 }
 
-//  read input 
-// clock = 0 
-// While ( true ) {
-//  insert processes to the active queue if clock tick . ( calculate priority and if the cpu is empty the lowest priority
-// they are to start at this timeslice).
-// process in the active queue
-//    is put into the cpu. If more than two processes have the same
-// priority then FIFO strategy can be used.
-// Check if the lowest priority process in the active queue has a lower
-// priority then the process in the cpu. If so then preempt.
-// Preempted process goes back to the active queue.
-// Perform cpu (decrement the timeslice of the process in the cpu) Perform IO(decrement the IO burst for all processes in the IO queue) if there is a process in the cpu (call this process p)
-// if p's current cpu burst is exhausted
-// if p is done with all cpu bursts send to the finished queue
-// if p is not done with all cpu bursts (which means there is an IO
-// burst ) send to the IO queue .
-// if p's timeslice is exhausted send to the expired queue and
-// recalculate priority and timeslice .
-// If there is any process in the IO queue that is finished with its IO
-// burst (there can be more than one, call this process p) If p's timeslice is exhausted move to the expired queue and
-// recalculate the priority and timeslice .
-// If p still has timeslice left insert p into the active queue.
-// If the startup queue , ready queue , expired queue , IO queue and the cpu are all empty then break out of the while loop (the simulation is complete)
-// if the ready queue and cpu are empty and the expired queue is not empty then switch the expired and active queues, this can be done
-// by just swapping the pointers of both the queues. Increment the clock (clock++)
-// }
-// print ending report
-// Input Speci cation:
-// The input  le will be read using Unix redirection.
-// i.e. ./a.out < InputFile.txt
-// The input of the program will be a text  le that contains a  nite number of jobs (or processes), one per line. The order of the process can be arbitrary (i.e. not in the order of arrival time). You should read each number until the end of the line. All numbers are integers.
-// All input will be assumed to be correct.
-// • First column is a process's nice value.
-// • Second column is a process's arrival time.
-// • Third column is the number of CPU bursts. (remember number of IO bursts is CPU bursts -1)
-// • Fourth column is the CPU burst time. 4
-         
+
+
+
+
+
 
 
 

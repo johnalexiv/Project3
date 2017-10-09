@@ -86,6 +86,12 @@ void Process::setTimeSlice(int timeSlice)
     _timeSlice = timeSlice; 
 }
 
+void Process::decrementTimeSlice()
+{
+    if ( _timeSlice > 0 )
+        _timeSlice--;
+}
+
 std::vector<int> Process::getCpuBursts() 
 { 
     return _cpuBursts; 
@@ -139,7 +145,7 @@ int Process::calculatePriority(int priority, int bonus)
 
 int Process::calculateBonus(int totalCpuBurst, int totalIoBurst)
 {
-    
+
 }
 
 int Process::calculateTimeSlice(int priority)
