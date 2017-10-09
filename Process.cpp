@@ -24,7 +24,6 @@ Process::Process(int pid,
     setEndTime(0);
     setCurrentCpuBurst(0);
     setCurrentIoBurst(0);
-    setCurrentState(ARRIVED);
 }
 
 int Process::getPID() 
@@ -87,16 +86,6 @@ void Process::setTimeSlice(int timeSlice)
     _timeSlice = timeSlice; 
 }
 
-int Process::getCurrentState() 
-{ 
-    return _currentState; 
-}
-
-void Process::setCurrentState(int currentState) 
-{ 
-    _currentState = currentState; 
-}
-
 std::vector<int> Process::getCpuBursts() 
 { 
     return _cpuBursts; 
@@ -143,11 +132,14 @@ int Process::calculateOriginalPriority(int nice)
 }
 
 // fix this
-int Process::caluclatePriority(int priority)
+int Process::calculatePriority(int priority, int bonus)
 {
-    int bonus;
-
     return (int)( priority + bonus );
+}
+
+int Process::calculateBonus(int totalCpuBurst, int totalIoBurst)
+{
+    
 }
 
 int Process::calculateTimeSlice(int priority)

@@ -6,6 +6,9 @@
 //  Copyright © 2017 John Alexander. All rights reserved.
 //
 
+#ifndef _PROCESS_H
+#define _PROCESS_H
+
 #include <vector>
 
 class Process
@@ -35,9 +38,6 @@ public:
     int getTimeSlice();
     void setTimeSlice(int);
 
-    int getCurrentState();
-    void setCurrentState(int);
-
     std::vector<int> getCpuBursts();
     void setCpuBursts(std::vector<int>);
 
@@ -52,7 +52,8 @@ public:
 
 private:
     int calculateOriginalPriority(int);
-    int caluclatePriority(int);
+    int calculatePriority(int, int);
+    int calculateBonus(int, int);
     int calculateTimeSlice(int);
  
 private:
@@ -61,27 +62,19 @@ private:
     int _startTime;
     int _endTime;
     int _priority;
+    int _bonus;
     int _timeSlice;
-    int _currentState;
 
     int _currentCpuBurst;
     int _currentIoBurst;
+
+    int _totalCpuBurst;
+    int _totalIoBurst;
     
     std::vector<int> _cpuBursts;
     std::vector<int> _ioBursts;
-
-    enum State
-    {
-        ARRIVED,
-        START,
-        ACTIVE,
-        EXPIRED,
-        IO,
-        FINISHED,
-        CPU,
-        NUMOFSTATES
-    };
 };
 
 
+#endif // _PROCESS_H
 
