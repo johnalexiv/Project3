@@ -82,11 +82,13 @@ Process createProcess(int pid, std::vector<int> processDetails)
         else 
             ioBursts.push_back(processDetails[burst++]);
     }
+
     Process process = Process(pid,
                             nice,
                             arrivalTime,
                             cpuBursts,
                             ioBursts);
+    
     return process;
 }
 
@@ -109,10 +111,13 @@ void runProcesses(Scheduler &scheduler)
 
         // decrement the timeslice of the process in the CPU
         // decrement the timeslice of IO burst for all IO processes
-        scheduler.decrementTimeSlices();
-        
+        scheduler.updateCpuAndIO();
+
         // if there is a process in cpu
-            
+        if ( !scheduler.isCpuEmpty() )
+        {
+            Process cpuProcess = scheduler.cpuTop();
+        }
             // if process in cpu is done with cpu burst
                 
                 // if process is done with all cpu bursts send to finished

@@ -112,6 +112,12 @@ void Process::setIoBursts(std::vector<int> ioBursts)
     _ioBursts = ioBursts; 
 }
 
+// fix this
+void Process::decrementIoBurst()
+{
+
+}
+
 int Process::getCurrentCpuBurst() 
 { 
     return _currentCpuBurst; 
@@ -152,6 +158,14 @@ int Process::calculateTimeSlice(int priority)
 {
     return (int)( ( ( 1 - priority / 150.0 ) * 395 + 0.5 ) + 5 );
 }
+
+
+
+
+
+
+
+
 
 
 

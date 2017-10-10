@@ -54,22 +54,22 @@ public:
     void resetClock();
     void incrementClock();
 
-    void decrementTimeSlices();
+    void updateCpuAndIO();
 
 private:
     void initializeScheduler(std::vector<Process>);
-    void decrementIoTimeSlices();
+    void decrementIoBursts();
     void decrementCpuTimeSlice();
 
 private:
-    StartQueue      * _startQueue;
-    ActiveQueue     * _activeQueue;
-    ExpiredQueue    * _expiredQueue;
-    IOQueue         * _ioQueue;
-    FinishedQueue   * _finishedQueue;
-    CPU             * _cpu;
+    StartQueue          * _startQueue;
+    ActiveExpiredQueue  * _activeQueue;
+    ActiveExpiredQueue  * _expiredQueue;
+    IOQueue             * _ioQueue;
+    FinishedQueue       * _finishedQueue;
+    CPU                 * _cpu;
 
-    int             _clock;
+    int                 _clock;
 };
 
 #endif // _SCHEDULER_H

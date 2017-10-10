@@ -26,8 +26,8 @@ Scheduler::~Scheduler()
 void Scheduler::initializeScheduler(std::vector<Process> processes)
 {
     _startQueue = new StartQueue;
-    _activeQueue = new ActiveQueue;
-    _expiredQueue = new ExpiredQueue;
+    _activeQueue = new ActiveExpiredQueue;
+    _expiredQueue = new ActiveExpiredQueue;
     _ioQueue = new IOQueue;
     _finishedQueue = new FinishedQueue;
     _cpu = new CPU;
@@ -186,13 +186,13 @@ void Scheduler::incrementClock()
     _clock++;
 }
 
-void Scheduler::decrementTimeSlices()
+void Scheduler::updateCpuAndIO()
 {
-    decrementIoTimeSlices();
+    decrementIoBursts();
     decrementCpuTimeSlice();
 }
 
-void Scheduler::decrementIoTimeSlices()
+void Scheduler::decrementIoBursts()
 {
     int i = 0;
     std::vector<Process> processes;

@@ -44,6 +44,7 @@ public:
 
     std::vector<int> getIoBursts();
     void setIoBursts(std::vector<int>);
+    void decrementIoBurst();
 
     int getCurrentCpuBurst();
     void setCurrentCpuBurst(int);
@@ -63,7 +64,6 @@ private:
     int _startTime;
     int _endTime;
     int _priority;
-    int _bonus;
     int _timeSlice;
 
     int _currentCpuBurst;

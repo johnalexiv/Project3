@@ -51,8 +51,7 @@ struct compareFinishedQueue
 };
 
 typedef std::priority_queue< Process, std::vector<Process>, compareStartQueue >             StartQueue;
-typedef std::priority_queue< Process, std::vector<Process>, compareActiveExpiredQueue >     ActiveQueue;
-typedef std::priority_queue< Process, std::vector<Process>, compareActiveExpiredQueue >     ExpiredQueue;
+typedef std::priority_queue< Process, std::vector<Process>, compareActiveExpiredQueue >     ActiveExpiredQueue;
 typedef std::priority_queue< Process, std::vector<Process>, compareIOQueue >                IOQueue;
 typedef std::priority_queue< Process, std::vector<Process>, compareFinishedQueue >          FinishedQueue;
 typedef std::queue<Process>                                                                 CPU;
