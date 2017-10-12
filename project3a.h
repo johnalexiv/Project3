@@ -15,11 +15,7 @@
 
 std::vector<std::string> readInput();
 void debugPrint(StartQueue, std::vector<Process>);
-void runProcesses(Scheduler&);
 std::vector<int> getProcessDetails(std::string);
 std::vector<Process> parseAndCreateProcesses(std::vector<std::string>);
 Process createProcess(int, std::vector<int>);
-void checkArrivingProcesses(Scheduler&);
-void updateCPU(Scheduler&);
-void checkPreemptRequired(Scheduler&);
 

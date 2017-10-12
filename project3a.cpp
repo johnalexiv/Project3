@@ -20,7 +20,7 @@ int main()
 
     //debugPrint(startQueue, processes);
 
-    runProcesses(scheduler);
+    scheduler.runProcesses();
 
     return 0;
 }
@@ -90,111 +90,6 @@ Process createProcess(int pid, std::vector<int> processDetails)
                             ioBursts);
     
     return process;
-}
-
-void runProcesses(Scheduler &scheduler)
-{
-    while ( scheduler.getClock() < 1000 )
-    {
-        // insert process into active queue if arriveTime == clock
-        checkArrivingProcesses(scheduler);
-
-        // check if CPU is empty and put lowest priority process 
-        // from active queue in CPU. use FIFO if two or more processes
-        // have the same priority
-        updateCPU(scheduler);
-
-        // check if active queue has lower priority process,
-        // if so, prempt process and put it back in active queue
-        // and save its time slice
-        checkPreemptRequired(scheduler);
-
-        // decrement the timeslice of the process in the CPU
-        // decrement the timeslice of IO burst for all IO processes
-        scheduler.updateCpuAndIO();
-
-        // if there is a process in cpu
-        if ( !scheduler.isCpuEmpty() )
-        {
-            Process cpuProcess = scheduler.cpuTop();
-        }
-            // if process in cpu is done with cpu burst
-                
-                // if process is done with all cpu bursts send to finished
-                
-                // if process is not done with all cpu bursts, send to IO
-            
-            // if process has used all timeslice send to expired queue
-            // and recalculate priority and timeslice
-        
-        // if there are any process in IO queue that finished with IO
-           
-            // if IO process timeslice is done, move process to expired and recalc.
-
-            // if process still has timeslice then more to active queue
-
-        // if all queues are empty then break, simulation is done
-
-        // if ready/cpu are empty and expired is not empty
-        // then swap ready and expired queues
-
-        // increment clock
-
-        if ( !scheduler.isActiveEmpty() )
-        {
-            std::cout << "PID: " << scheduler.activeTop().getPID() << std::endl; 
-            std::cout << "Arrival Time: " << scheduler.activeTop().getArrivalTime() << std::endl;
-            std::cout << "Priority: " << scheduler.activeTop().getPriority() << std::endl; 
-            std::cout << "Time Slice: " << scheduler.activeTop().getTimeSlice() << std::endl; 
-            scheduler.activePop();
-        }
-
-        scheduler.incrementClock();
-    }
-}
-
-void checkArrivingProcesses(Scheduler &scheduler)
-{
-    if ( scheduler.isStartEmpty() )
-        return;
-
-    Process currentProcess = scheduler.startTop();
-    while ( currentProcess.getArrivalTime() == scheduler.getClock() )
-    {
-        scheduler.activePush(currentProcess);
-        scheduler.startPop();
-
-        if ( scheduler.isStartEmpty() )
-            break;
-
-        currentProcess = scheduler.startTop();
-    }
-}
-
-void updateCPU(Scheduler &scheduler)
-{
-    if ( scheduler.isCpuEmpty() && !scheduler.isActiveEmpty() )
-    {
-        Process process = scheduler.activeTop();
-        scheduler.cpuPush(process);
-        scheduler.activePop();
-    }
-}
-
-void checkPreemptRequired(Scheduler &scheduler)
-{
-    if ( !scheduler.isActiveEmpty() && !scheduler.isCpuEmpty() )
-    {
-        Process activeProcess = scheduler.activeTop();
-        Process cpuProcess = scheduler.cpuTop();
-        if ( activeProcess.getPriority() < cpuProcess.getPriority() )
-        {
-            scheduler.cpuPop();
-            scheduler.activePop();
-            scheduler.activePush(cpuProcess);
-            scheduler.cpuPush(activeProcess);
-        }
-    }
 }
 
 void debugPrint(StartQueue startQueue, std::vector<Process> processes)

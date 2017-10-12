@@ -9,6 +9,7 @@
 #ifndef _SCHEDULER_H
 #define _SCHEDULER_H
 
+#include <iostream>
 #include <queue>
 #include <vector>
 #include "process.h"
@@ -19,7 +20,12 @@ class Scheduler
 public:
     Scheduler(std::vector<Process> processes);
     ~Scheduler();
-    
+
+    void runProcesses();
+
+private:
+    void initializeScheduler(std::vector<Process>);
+
     Process startTop();
     void startPop();
     void startPush(Process);
@@ -54,12 +60,11 @@ public:
     void resetClock();
     void incrementClock();
 
-    void updateCpuAndIO();
-
-private:
-    void initializeScheduler(std::vector<Process>);
-    void decrementIoBursts();
-    void decrementCpuTimeSlice();
+    void checkArrivingProcesses();
+    void checkPreemptRequired();
+    void assignLowestPriorityProcessToCpu();
+    void updateIoBursts();
+    void updateCpuTimeSlice();
 
 private:
     StartQueue          * _startQueue;

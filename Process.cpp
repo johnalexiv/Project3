@@ -24,6 +24,7 @@ Process::Process(int pid,
     setEndTime(0);
     setCurrentCpuBurst(0);
     setCurrentIoBurst(0);
+    setCpuBurstCount(0);
 }
 
 int Process::getPID() 
@@ -112,12 +113,6 @@ void Process::setIoBursts(std::vector<int> ioBursts)
     _ioBursts = ioBursts; 
 }
 
-// fix this
-void Process::decrementIoBurst()
-{
-
-}
-
 int Process::getCurrentCpuBurst() 
 { 
     return _currentCpuBurst; 
@@ -136,6 +131,16 @@ int Process::getCurrentIoBurst()
 void Process::setCurrentIoBurst(int currentIoBurst) 
 { 
     _currentIoBurst = currentIoBurst; 
+}
+
+int Process::getCpuBurstCount()
+{
+    return _cpuBurstCount;
+}
+
+void Process::setCpuBurstCount(int count)
+{
+    _cpuBurstCount = count;
 }
 
 int Process::calculateOriginalPriority(int nice)

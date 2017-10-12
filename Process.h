@@ -44,7 +44,6 @@ public:
 
     std::vector<int> getIoBursts();
     void setIoBursts(std::vector<int>);
-    void decrementIoBurst();
 
     int getCurrentCpuBurst();
     void setCurrentCpuBurst(int);
@@ -52,12 +51,17 @@ public:
     int getCurrentIoBurst();
     void setCurrentIoBurst(int);
 
+    int getCpuBurstCount();
+    void setCpuBurstCount(int);
+
+    void updateProcess();
+
 private:
     int calculateOriginalPriority(int);
     int calculatePriority(int, int);
     int calculateBonus(int, int);
     int calculateTimeSlice(int);
- 
+
 private:
     int _pid;
     int _arrivalTime;
@@ -66,6 +70,7 @@ private:
     int _priority;
     int _timeSlice;
 
+    int _cpuBurstCount;
     int _currentCpuBurst;
     int _currentIoBurst;
 

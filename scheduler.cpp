@@ -186,13 +186,129 @@ void Scheduler::incrementClock()
     _clock++;
 }
 
-void Scheduler::updateCpuAndIO()
-{
-    decrementIoBursts();
-    decrementCpuTimeSlice();
+void Scheduler::runProcesses()
+{   
+    while ( getClock() < 1000 )
+    {
+        // insert process into active queue if arriveTime == clock
+        checkArrivingProcesses();
+
+        // check if CPU is empty and put lowest priority process 
+        // from active queue in CPU. use FIFO if two or more processes
+        // have the same priority
+        assignLowestPriorityProcessToCpu();
+
+        // check if active queue has lower priority process,
+        // if so, prempt process and put it back in active queue
+        // and save its time slice
+        checkPreemptRequired();
+
+        // decrement the timeslice of the process in the CPU
+        updateCpuTimeSlice();
+
+        // decrement the timeslice of IO burst for all IO processes
+        updateIoBursts();
+
+        // if there is a process in cpu
+        if ( !isCpuEmpty() )
+        {
+            Process cpuProcess = cpuTop();
+            //std::cout << "Clock: " << getClock() << " , Timeslice: " << cpuProcess.getTimeSlice() << std::endl;
+        }
+            // if process in cpu is done with cpu burst
+                
+                // if process is done with all cpu bursts send to finished
+                
+                // if process is not done with all cpu bursts, send to IO
+            
+            // if process has used all timeslice send to expired queue
+            // and recalculate priority and timeslice
+        
+        // if there are any process in IO queue that finished with IO
+           
+            // if IO process timeslice is done, move process to expired and recalc.
+
+            // if process still has timeslice then more to active queue
+
+        // if all queues are empty then break, simulation is done
+
+        // if ready/cpu are empty and expired is not empty
+        // then swap ready and expired queues
+
+        // increment clock
+
+        // if ( !isActiveEmpty() )
+        // {
+        //     std::cout << "PID: " << activeTop().getPID() << std::endl; 
+        //     std::cout << "Arrival Time: " << activeTop().getArrivalTime() << std::endl;
+        //     std::cout << "Priority: " << activeTop().getPriority() << std::endl; 
+        //     std::cout << "Time Slice: " << activeTop().getTimeSlice() << std::endl; 
+        //     activePop();
+        // }
+
+        incrementClock();
+    }
 }
 
-void Scheduler::decrementIoBursts()
+void Scheduler::checkArrivingProcesses()
+{
+    if ( isStartEmpty() )
+        return;
+
+    Process currentProcess = startTop();
+    while ( currentProcess.getArrivalTime() == getClock() )
+    {
+        activePush(currentProcess);
+        startPop();
+        std::cout << "[" << getClock() << "] ";
+        std::cout << "<" << currentProcess.getPID() << "> ";
+        std::cout << "Enters ready queue (Priority: " << currentProcess.getPriority();
+        std::cout << ", Timeslice: " << currentProcess.getTimeSlice() << ")" << std::endl;
+        if ( isStartEmpty() )
+            break;
+
+        currentProcess = startTop();
+    }
+}
+
+void Scheduler::assignLowestPriorityProcessToCpu()
+{
+    if ( isCpuEmpty() && !isActiveEmpty() )
+    {
+        Process process = activeTop();
+        cpuPush(process);
+        activePop();
+    }
+}
+
+void Scheduler::checkPreemptRequired()
+{
+    if ( !isActiveEmpty() && !isCpuEmpty() )
+    {
+        Process activeProcess = activeTop();
+        Process cpuProcess = cpuTop();
+        if ( activeProcess.getPriority() < cpuProcess.getPriority() )
+        {
+            cpuPop();
+            activePop();
+            activePush(cpuProcess);
+            cpuPush(activeProcess);
+        }
+    }
+}
+
+void Scheduler::updateCpuTimeSlice()
+{
+    if ( !isCpuEmpty() )
+    {
+        Process process = cpuTop();
+        cpuPop();
+        process.decrementTimeSlice();
+        cpuPush(process);
+    }
+}
+
+void Scheduler::updateIoBursts()
 {
     int i = 0;
     std::vector<Process> processes;
@@ -208,16 +324,6 @@ void Scheduler::decrementIoBursts()
     }
 }
 
-void Scheduler::decrementCpuTimeSlice()
-{
-    if ( !isCpuEmpty() )
-    {
-        Process process = cpuTop();
-        cpuPop();
-        process.decrementTimeSlice();
-        cpuPush(process);
-    }
-}
 
 
 
