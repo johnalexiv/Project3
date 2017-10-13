@@ -187,8 +187,8 @@ void Scheduler::incrementClock()
 }
 
 void Scheduler::runProcesses()
-{   
-    while ( getClock() < 1000 )
+{       
+    while ( true )
     {
         // insert process into active queue if arriveTime == clock
         checkArrivingProcesses();
@@ -204,17 +204,14 @@ void Scheduler::runProcesses()
         checkPreemptRequired();
 
         // decrement the timeslice of the process in the CPU
-        updateCpuTimeSlice();
+        updateCpuBurstAndTimeSlice();
 
         // decrement the timeslice of IO burst for all IO processes
         updateIoBursts();
 
         // if there is a process in cpu
-        if ( !isCpuEmpty() )
-        {
-            Process cpuProcess = cpuTop();
-            //std::cout << "Clock: " << getClock() << " , Timeslice: " << cpuProcess.getTimeSlice() << std::endl;
-        }
+        checkProcessFinishedCpu();
+
             // if process in cpu is done with cpu burst
                 
                 // if process is done with all cpu bursts send to finished
@@ -225,15 +222,19 @@ void Scheduler::runProcesses()
             // and recalculate priority and timeslice
         
         // if there are any process in IO queue that finished with IO
-           
+        checkProcessesFinishedIO();
+
             // if IO process timeslice is done, move process to expired and recalc.
 
             // if process still has timeslice then more to active queue
 
         // if all queues are empty then break, simulation is done
+        if ( allQueuesEmpty() )
+            break;
 
         // if ready/cpu are empty and expired is not empty
         // then swap ready and expired queues
+        swapQueuesIfRequired();
 
         // increment clock
 
@@ -260,10 +261,8 @@ void Scheduler::checkArrivingProcesses()
     {
         activePush(currentProcess);
         startPop();
-        std::cout << "[" << getClock() << "] ";
-        std::cout << "<" << currentProcess.getPID() << "> ";
-        std::cout << "Enters ready queue (Priority: " << currentProcess.getPriority();
-        std::cout << ", Timeslice: " << currentProcess.getTimeSlice() << ")" << std::endl;
+        printMessage(TO_ACTIVE, currentProcess);
+
         if ( isStartEmpty() )
             break;
 
@@ -278,6 +277,8 @@ void Scheduler::assignLowestPriorityProcessToCpu()
         Process process = activeTop();
         cpuPush(process);
         activePop();
+
+        printMessage(TO_CPU, process);
     }
 }
 
@@ -287,23 +288,25 @@ void Scheduler::checkPreemptRequired()
     {
         Process activeProcess = activeTop();
         Process cpuProcess = cpuTop();
-        if ( activeProcess.getPriority() < cpuProcess.getPriority() )
+        if ( activeProcess.getDynamicPriority() < cpuProcess.getDynamicPriority() )
         {
             cpuPop();
             activePop();
             activePush(cpuProcess);
             cpuPush(activeProcess);
+
+            printMessage(PREEMPT, activeProcess, cpuProcess);
         }
     }
 }
 
-void Scheduler::updateCpuTimeSlice()
+void Scheduler::updateCpuBurstAndTimeSlice()
 {
     if ( !isCpuEmpty() )
     {
         Process process = cpuTop();
         cpuPop();
-        process.decrementTimeSlice();
+        process.updateCpuBurstAndTimeslice();
         cpuPush(process);
     }
 }
@@ -319,10 +322,182 @@ void Scheduler::updateIoBursts()
     }
     for( i = 0; i < processes.size(); i++ )
     {
-        processes[i].decrementTimeSlice();
+        processes[i].updateIoBurst();
         ioPush(processes[i]);
     }
 }
+
+void Scheduler::checkProcessFinishedCpu()
+{
+    if ( !isCpuEmpty() )
+    {
+        Process cpuProcess = cpuTop();
+        cpuPop();
+
+        if ( cpuProcess.cpuFlagSet() )
+        {
+            cpuProcess.setCpuFlag(false);
+
+            if ( cpuProcess.isFinished() )
+            {
+                finishedPush(cpuProcess);
+                printMessage(FINISHED, cpuProcess);
+            }
+            else  
+            {
+                ioPush(cpuProcess);
+                printMessage(TO_IO, cpuProcess);
+            }
+        }
+        else if ( cpuProcess.getTimeSlice() == 0 )
+        {
+            cpuProcess.newTimeSlice();
+            expiredPush(cpuProcess);
+            printMessage(TO_EXPIRED, cpuProcess);
+        }
+        else
+        {
+            cpuPush(cpuProcess);
+        }
+    }  
+}
+
+void Scheduler::checkProcessesFinishedIO()
+{
+    int i = 0;
+    std::vector<Process> ioProcesses;
+    while ( !isIoEmpty() )
+    {
+        Process process = ioTop();
+        ioPop(); 
+
+        if ( process.ioFlagSet() )
+        {
+            process.setIoFlag(false);
+
+            if ( process.getTimeSlice() == 0 )
+            {
+                process.newTimeSlice();
+                expiredPush(process);
+                printMessage(IO_TO_EXPIRED, process);
+            }
+            else
+            {
+                activePush(process);
+                printMessage(IO_TO_ACTIVE, process);
+            }
+        }
+        else
+            ioProcesses[i++] = process;
+    }
+
+    for( i = 0; i < ioProcesses.size(); i++ )
+        ioPush(ioProcesses[i]);
+}
+
+bool Scheduler::allQueuesEmpty()
+{
+    bool allEmpty = true;
+    if ( !isCpuEmpty() || 
+         !isActiveEmpty() || 
+         !isExpiredEmpty() || 
+         !isIoEmpty() ||
+         !isStartEmpty() )
+        allEmpty = false;
+    
+    return allEmpty;
+}
+
+void Scheduler::swapQueuesIfRequired()
+{
+    if ( isCpuEmpty() && isActiveEmpty() )
+        if ( !isExpiredEmpty() )
+        {
+            swapActiveAndExpiredQueues();
+            printMessage(SWAPPED);
+        }
+}
+
+void Scheduler::swapActiveAndExpiredQueues()
+{
+    ActiveExpiredQueue temp = *_activeQueue;
+    *_activeQueue = *_expiredQueue;
+    *_expiredQueue = temp;
+}
+
+void Scheduler::printMessage(int messageType)
+{
+    std::string message;
+    switch( messageType )
+    {
+        case SWAPPED:
+            message = "[" + std::to_string(getClock()) + "] *** Queue Swap";
+            break;
+        default:
+            message = "something went wrong.";
+            break;
+    }
+    std::cout << message << std::endl;
+}
+
+void Scheduler::printMessage(int messageType, Process p1, Process p2)
+{
+    std::string message;
+    message = "[" + std::to_string(getClock()) + "] ";
+    message += "<" + std::to_string(p1.getPID()) + "> ";
+    switch( messageType )
+    {
+        case PREEMPT:
+            message += "Preempts Process " + std::to_string(p2.getPID());
+            break;
+        default:
+            message = "something went wrong.";
+            break;
+    }
+    std::cout << message << std::endl;
+}
+
+void Scheduler::printMessage(int messageType, Process p1)
+{
+    std::string message;
+    message = "[" + std::to_string(getClock()) + "] ";
+    message += "<" + std::to_string(p1.getPID()) + "> ";
+    switch( messageType )
+    {
+        case TO_ACTIVE:
+            message += "Enters ready queue (Priority: " + std::to_string(p1.getDynamicPriority());
+            message += ", Timeslice: " + std::to_string(p1.getTimeSlice()) + ")";
+            break;
+        case TO_CPU:
+            message += "Enters the CPU";
+            break;
+        case FINISHED:
+            message += "Finishes and moves to the Finished Queue";
+            break;
+        case TO_IO:
+            message += "Moves to the IO Queue";
+            break;
+        case TO_EXPIRED:
+            message += "Finishes its time slice and moves to Expired Queue ";
+            message += "(Priority: " + std::to_string(p1.getDynamicPriority());
+            message += ", Timeslice: " + std::to_string(p1.getTimeSlice()) + ")";
+            break;
+        case IO_TO_EXPIRED:
+            message += "Finishes IO and moves to the Expired Queue ";
+            message += "(Priority: " + std::to_string(p1.getDynamicPriority());
+            message += ", Timeslice: " + std::to_string(p1.getTimeSlice()) + ")";
+            break;
+        case IO_TO_ACTIVE:
+            message += "Finishes IO and moves to the Ready Queue";
+            break;
+        default:
+            message = "something went wrong.";
+            break;
+    }
+    std::cout << message << std::endl;
+}
+
+
 
 
 

@@ -24,10 +24,10 @@ struct compareActiveExpiredQueue
 {  
     bool operator()(Process first, Process second)  
     {  
-        if ( first.getPriority() == second.getPriority() )
+        if ( first.getDynamicPriority() == second.getDynamicPriority() )
             return first.getPID() > second.getPID();
         else
-            return first.getPriority() > second.getPriority();  
+            return first.getDynamicPriority() > second.getDynamicPriority();  
     }
 };
 

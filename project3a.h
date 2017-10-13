@@ -14,7 +14,6 @@
 #include "process.h"
 
 std::vector<std::string> readInput();
-void debugPrint(StartQueue, std::vector<Process>);
 std::vector<int> getProcessDetails(std::string);
 std::vector<Process> parseAndCreateProcesses(std::vector<std::string>);
 Process createProcess(int, std::vector<int>);

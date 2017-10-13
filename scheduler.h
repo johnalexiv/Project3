@@ -12,6 +12,7 @@
 #include <iostream>
 #include <queue>
 #include <vector>
+#include <string>
 #include "process.h"
 #include "queuetypes.h"
 
@@ -60,11 +61,21 @@ private:
     void resetClock();
     void incrementClock();
 
+    void checkProcessFinishedCpu();
+    void checkProcessesFinishedIO();
+
     void checkArrivingProcesses();
     void checkPreemptRequired();
     void assignLowestPriorityProcessToCpu();
     void updateIoBursts();
-    void updateCpuTimeSlice();
+    void updateCpuBurstAndTimeSlice();
+    bool allQueuesEmpty();
+    void swapQueuesIfRequired();
+    void swapActiveAndExpiredQueues();
+
+    void printMessage(int);
+    void printMessage(int, Process);
+    void printMessage(int, Process, Process);
 
 private:
     StartQueue          * _startQueue;
@@ -75,6 +86,19 @@ private:
     CPU                 * _cpu;
 
     int                 _clock;
+
+    enum PrintOption
+    {
+        TO_ACTIVE,
+        TO_CPU,
+        PREEMPT,
+        FINISHED,
+        TO_IO,
+        TO_EXPIRED,
+        IO_TO_EXPIRED,
+        IO_TO_ACTIVE,
+        SWAPPED
+    };
 };
 
 #endif // _SCHEDULER_H

@@ -21,10 +21,8 @@ public:
             std::vector<int> ioBursts);
 
     int getPID();
-    void setPID(int);
 
     int getArrivalTime();
-    void setArrivalTime(int);
 
     int getStartTime();
     void setStartTime(int);
@@ -32,50 +30,69 @@ public:
     int getEndTime();
     void setEndTime(int);
 
-    int getPriority();
-    void setPriority(int);
+    int getStaticPriority();
+    int getDynamicPriority();
 
     int getTimeSlice();
-    void setTimeSlice(int);
-    void decrementTimeSlice();
+    void newTimeSlice();
 
-    std::vector<int> getCpuBursts();
-    void setCpuBursts(std::vector<int>);
-
-    std::vector<int> getIoBursts();
-    void setIoBursts(std::vector<int>);
-
+    void updateCpuBurstAndTimeslice();
     int getCurrentCpuBurst();
-    void setCurrentCpuBurst(int);
+    int getTotalCpuBurst();
 
     int getCurrentIoBurst();
-    void setCurrentIoBurst(int);
+    void updateIoBurst();
+    int getTotalIoBurst();
 
-    int getCpuBurstCount();
-    void setCpuBurstCount(int);
+    bool isFinished();
 
-    void updateProcess();
+    bool cpuFlagSet();
+    bool ioFlagSet();
+
+    void setCpuFlag(bool);
+    void setIoFlag(bool);
+
+    std::vector<int> getCpuBursts();
+    std::vector<int> getIoBursts();
 
 private:
-    int calculateOriginalPriority(int);
-    int calculatePriority(int, int);
-    int calculateBonus(int, int);
-    int calculateTimeSlice(int);
+    void setPID(int);
+    void setArrivalTime(int);
+    void setStaticPriority(int);
+    void setDynamicPriority(int); 
+    void setTimeSlice(int);
+    void setCpuBursts(std::vector<int>);
+    void setIoBursts(std::vector<int>);
+
+    void decrementTimeSlice();
+    void decrementCpuBurst();
+    void decrementIoBurst();
+
+    int calculateStaticPriority(int);
+    int calculatePriority();
+    int calculateBonus();
+    int calculateTimeSlice();
+    int calculateInitialTimeSlice(int);
 
 private:
-    int _pid;
-    int _arrivalTime;
-    int _startTime;
-    int _endTime;
-    int _priority;
-    int _timeSlice;
+    int     _pid;
+    int     _arrivalTime;
+    int     _startTime;
+    int     _endTime;
+    int     _staticPriority;
+    int     _dynamicPriority;
+    int     _timeSlice;
+    bool    _isFinished;
 
-    int _cpuBurstCount;
-    int _currentCpuBurst;
-    int _currentIoBurst;
+    int     _cpuMaxIndex;
+    int     _cpuIndex;
+    int     _ioMaxIndex;
+    int     _ioIndex;
+    bool    _cpuBurstFinishedFlag;
+    bool    _ioBurstFinishedFlag;
 
-    int _totalCpuBurst;
-    int _totalIoBurst;
+    int     _totalCpuBurst;
+    int     _totalIoBurst;
     
     std::vector<int> _cpuBursts;
     std::vector<int> _ioBursts;

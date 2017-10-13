@@ -15,16 +15,23 @@ Process::Process(int pid,
                 std::vector<int> ioBursts)
 {
     setPID(pid);
-    setPriority(calculateOriginalPriority(nice));
-    setTimeSlice(calculateTimeSlice(getPriority()));
+    setStaticPriority(calculateStaticPriority(nice));
+    setTimeSlice(calculateInitialTimeSlice(getStaticPriority()));
     setArrivalTime(arrivalTime);
     setCpuBursts(cpuBursts);
     setIoBursts(ioBursts);
     setStartTime(0);
     setEndTime(0);
-    setCurrentCpuBurst(0);
-    setCurrentIoBurst(0);
-    setCpuBurstCount(0);
+    setCpuFlag(false);
+    setIoFlag(false);
+    _dynamicPriority = _staticPriority;
+    _cpuMaxIndex = cpuBursts.size() - 1;
+    _cpuIndex = 0;
+    _ioMaxIndex = ioBursts.size() - 1;
+    _ioIndex = 0;
+    _isFinished = false;
+    _totalCpuBurst = 0;
+    _totalIoBurst = 0;
 }
 
 int Process::getPID() 
@@ -67,19 +74,34 @@ void Process::setEndTime(int endTime)
     _endTime = endTime; 
 }
 
-int Process::getPriority() 
+int Process::getStaticPriority() 
 { 
-    return _priority; 
+    return _staticPriority; 
 }
 
-void Process::setPriority(int priority) 
+void Process::setStaticPriority(int priority) 
 { 
-    _priority = priority; 
+    _staticPriority = priority; 
+}
+
+int Process::getDynamicPriority() 
+{ 
+    return _dynamicPriority; 
+}
+
+void Process::setDynamicPriority(int priority) 
+{ 
+    _dynamicPriority = priority; 
 }
 
 int Process::getTimeSlice() 
 { 
     return _timeSlice; 
+}
+
+void Process::newTimeSlice()
+{
+    calculateTimeSlice();
 }
 
 void Process::setTimeSlice(int timeSlice) 
@@ -89,7 +111,7 @@ void Process::setTimeSlice(int timeSlice)
 
 void Process::decrementTimeSlice()
 {
-    if ( _timeSlice > 0 )
+    if ( getTimeSlice() > 0 )
         _timeSlice--;
 }
 
@@ -113,56 +135,137 @@ void Process::setIoBursts(std::vector<int> ioBursts)
     _ioBursts = ioBursts; 
 }
 
-int Process::getCurrentCpuBurst() 
-{ 
-    return _currentCpuBurst; 
-}
-
-void Process::setCurrentCpuBurst(int currentCpuBurst) 
-{ 
-    _currentCpuBurst = currentCpuBurst; 
-}
-
-int Process::getCurrentIoBurst() 
-{ 
-    return _currentIoBurst; 
-}
-
-void Process::setCurrentIoBurst(int currentIoBurst) 
-{ 
-    _currentIoBurst = currentIoBurst; 
-}
-
-int Process::getCpuBurstCount()
+void Process::updateCpuBurstAndTimeslice()
 {
-    return _cpuBurstCount;
+    decrementCpuBurst();
+    decrementTimeSlice();
 }
 
-void Process::setCpuBurstCount(int count)
+int Process::getCurrentCpuBurst()
 {
-    _cpuBurstCount = count;
+    return _cpuBursts[_cpuIndex];
 }
 
-int Process::calculateOriginalPriority(int nice)
+int Process::getTotalCpuBurst()
 {
-    return (int)( ( ( ( nice + 20 ) / 39.0 ) * 30 + 0.5 ) + 105 );
+    return _totalCpuBurst;
 }
 
-// fix this
-int Process::calculatePriority(int priority, int bonus)
+void Process::decrementCpuBurst()
 {
-    return (int)( priority + bonus );
+    if ( getCurrentCpuBurst() > 0 )
+    {
+        _cpuBursts[_cpuIndex]--;
+        _totalCpuBurst++;
+    }
+
+    if ( getCurrentCpuBurst() == 0 && _cpuIndex < _cpuMaxIndex )
+    {
+        _cpuIndex++;
+        setCpuFlag(true);
+    }
+    else
+        _isFinished = true;
 }
 
-int Process::calculateBonus(int totalCpuBurst, int totalIoBurst)
+void Process::updateIoBurst()
 {
-
+    decrementIoBurst();
 }
 
-int Process::calculateTimeSlice(int priority)
+bool Process::isFinished()
 {
-    return (int)( ( ( 1 - priority / 150.0 ) * 395 + 0.5 ) + 5 );
+    return _isFinished;
 }
+
+bool Process::cpuFlagSet()
+{
+    return _cpuBurstFinishedFlag;
+}
+
+void Process::setCpuFlag(bool flag)
+{
+    _cpuBurstFinishedFlag = flag;
+}
+
+bool Process::ioFlagSet()
+{
+    return _ioBurstFinishedFlag;
+}
+
+void Process::setIoFlag(bool flag)
+{
+    _ioBurstFinishedFlag = flag;
+}
+
+int Process::getCurrentIoBurst()
+{
+    return _ioBursts[_ioIndex];
+}
+
+int Process::getTotalIoBurst()
+{
+    return _totalIoBurst;
+}
+
+void Process::decrementIoBurst()
+{
+    if ( getCurrentIoBurst() > 0 )
+    {
+        _ioBursts[_ioIndex]--;
+        _totalIoBurst++;
+    }
+    if ( getCurrentIoBurst() == 0 && _ioIndex < _ioMaxIndex )
+    {
+        _ioIndex++;
+        setIoFlag(true);
+    }
+}
+
+int Process::calculateStaticPriority(int nice)
+{
+    _staticPriority = (int)( ( ( ( nice + 20 ) / 39.0 ) * 30 + 0.5 ) + 105 );
+    return _staticPriority;
+}
+
+int Process::calculatePriority()
+{
+    _dynamicPriority = (int)( getStaticPriority() + calculateBonus() );
+    return _dynamicPriority;
+}
+
+int Process::calculateBonus()
+{
+    int totalCpuBurst = getTotalCpuBurst();
+    int totalIoBurst = getTotalIoBurst();
+
+    if ( totalCpuBurst < totalIoBurst )
+        return (int)( ( ( 1 - ( totalCpuBurst / (double)(totalIoBurst) ) ) * -5 ) - 0.5);
+    else
+        return (int)( ( ( 1 - ( totalIoBurst / (double)(totalCpuBurst) ) ) * 5 ) + 0.5);
+}
+
+int Process::calculateTimeSlice()
+{
+    int priority = calculatePriority();
+    _timeSlice = (int)( ( ( 1 - ( priority / 150.0 ) ) * 395 + 0.5 ) + 5 );
+    return _timeSlice;
+}
+
+int Process::calculateInitialTimeSlice(int priority)
+{
+    return (int)( ( ( 1 - ( priority / 150.0 ) ) * 395 + 0.5 ) + 5 );
+}
+
+
+
+
+
+
+
+
+
+
 
 
 

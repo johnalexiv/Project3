@@ -18,8 +18,6 @@ int main()
 
     Scheduler scheduler = Scheduler(processes);
 
-    //debugPrint(startQueue, processes);
-
     scheduler.runProcesses();
 
     return 0;
@@ -92,42 +90,6 @@ Process createProcess(int pid, std::vector<int> processDetails)
     return process;
 }
 
-void debugPrint(StartQueue startQueue, std::vector<Process> processes)
-{
-    while ( !startQueue.empty() )
-    {
-        Process temp = startQueue.top();
-        std::cout << "PID: " << temp.getPID() << ", Arrival Time: " << temp.getArrivalTime() << std::endl;
-        startQueue.pop();
-    }
-
-    int i = 0;
-    while ( i < processes.size() )
-    {
-        std::cout << "PID: " << processes[i].getPID() << std::endl;
-        std::cout << "Priority: " << processes[i].getPriority() << std::endl;
-        std::cout << "Arrival Time: " << processes[i].getArrivalTime() << std::endl;
-        std::cout << "Time Slice: " << processes[i].getTimeSlice() << std::endl;
-        int j = 0;
-        std::cout << "CPU Bursts: ";
-        std::vector<int> cpuBursts = processes[i].getCpuBursts();
-        while ( j < processes[i].getCpuBursts().size() )
-        {
-            std::cout << cpuBursts[j++] << " ";
-        }
-        std::cout << std::endl;
-
-        j = 0;
-        std::cout << "IO Bursts: ";
-        std::vector<int> ioBursts = processes[i].getIoBursts();
-        while ( j < processes[i].getIoBursts().size() )
-        {
-            std::cout << ioBursts[j++] << " ";
-        }
-        std::cout << std::endl << std::endl;
-        i++;
-    }
-}
 
 
 
