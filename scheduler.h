@@ -10,6 +10,7 @@
 #define _SCHEDULER_H
 
 #include <iostream>
+#include <iomanip>
 #include <queue>
 #include <vector>
 #include <string>
@@ -23,6 +24,7 @@ public:
     ~Scheduler();
 
     void runProcesses();
+    void printStatistics();
 
 private:
     void initializeScheduler(std::vector<Process>);
@@ -67,15 +69,19 @@ private:
     void checkArrivingProcesses();
     void checkPreemptRequired();
     void assignLowestPriorityProcessToCpu();
-    void updateIoBursts();
+    void decrementIoBursts();
     void updateCpuBurstAndTimeSlice();
     bool allQueuesEmpty();
     void swapQueuesIfRequired();
     void swapActiveAndExpiredQueues();
 
-    void printMessage(int);
-    void printMessage(int, Process);
-    void printMessage(int, Process, Process);
+    void printMessage(int, int);
+    void printMessage(int, Process, int);
+    void printMessage(int, Process, Process, int);
+    void printProcessStatistics(Process);
+    void printAverages(std::vector<Process>);
+
+    double round(double);
 
 private:
     StartQueue          * _startQueue;

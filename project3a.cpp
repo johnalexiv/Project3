@@ -20,6 +20,8 @@ int main()
 
     scheduler.runProcesses();
 
+    scheduler.printStatistics();
+    
     return 0;
 }
 

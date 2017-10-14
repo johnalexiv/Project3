@@ -6,6 +6,8 @@
 //  Copyright © 2017 John Alexander. All rights reserved.
 //
 
+#define ALLOWPRINTING
+
 #include "scheduler.h"
 
 Scheduler::Scheduler(std::vector<Process> processes)
@@ -140,6 +142,8 @@ void Scheduler::finishedPop()
 
 void Scheduler::finishedPush(Process process)
 {
+    process.setEndTime(getClock());
+    process.calculateStatistics();
     _finishedQueue->push(process);
 }
 
@@ -187,65 +191,27 @@ void Scheduler::incrementClock()
 }
 
 void Scheduler::runProcesses()
-{       
+{
     while ( true )
     {
-        // insert process into active queue if arriveTime == clock
         checkArrivingProcesses();
 
-        // check if CPU is empty and put lowest priority process 
-        // from active queue in CPU. use FIFO if two or more processes
-        // have the same priority
         assignLowestPriorityProcessToCpu();
 
-        // check if active queue has lower priority process,
-        // if so, prempt process and put it back in active queue
-        // and save its time slice
         checkPreemptRequired();
 
-        // decrement the timeslice of the process in the CPU
         updateCpuBurstAndTimeSlice();
 
-        // decrement the timeslice of IO burst for all IO processes
-        updateIoBursts();
+        decrementIoBursts();
 
-        // if there is a process in cpu
         checkProcessFinishedCpu();
 
-            // if process in cpu is done with cpu burst
-                
-                // if process is done with all cpu bursts send to finished
-                
-                // if process is not done with all cpu bursts, send to IO
-            
-            // if process has used all timeslice send to expired queue
-            // and recalculate priority and timeslice
-        
-        // if there are any process in IO queue that finished with IO
         checkProcessesFinishedIO();
 
-            // if IO process timeslice is done, move process to expired and recalc.
-
-            // if process still has timeslice then more to active queue
-
-        // if all queues are empty then break, simulation is done
         if ( allQueuesEmpty() )
             break;
 
-        // if ready/cpu are empty and expired is not empty
-        // then swap ready and expired queues
         swapQueuesIfRequired();
-
-        // increment clock
-
-        // if ( !isActiveEmpty() )
-        // {
-        //     std::cout << "PID: " << activeTop().getPID() << std::endl; 
-        //     std::cout << "Arrival Time: " << activeTop().getArrivalTime() << std::endl;
-        //     std::cout << "Priority: " << activeTop().getPriority() << std::endl; 
-        //     std::cout << "Time Slice: " << activeTop().getTimeSlice() << std::endl; 
-        //     activePop();
-        // }
 
         incrementClock();
     }
@@ -261,7 +227,7 @@ void Scheduler::checkArrivingProcesses()
     {
         activePush(currentProcess);
         startPop();
-        printMessage(TO_ACTIVE, currentProcess);
+        printMessage(TO_ACTIVE, currentProcess, __LINE__);
 
         if ( isStartEmpty() )
             break;
@@ -278,7 +244,7 @@ void Scheduler::assignLowestPriorityProcessToCpu()
         cpuPush(process);
         activePop();
 
-        printMessage(TO_CPU, process);
+        printMessage(TO_CPU, process, __LINE__);
     }
 }
 
@@ -295,7 +261,7 @@ void Scheduler::checkPreemptRequired()
             activePush(cpuProcess);
             cpuPush(activeProcess);
 
-            printMessage(PREEMPT, activeProcess, cpuProcess);
+            printMessage(PREEMPT, activeProcess, cpuProcess, __LINE__);
         }
     }
 }
@@ -311,18 +277,19 @@ void Scheduler::updateCpuBurstAndTimeSlice()
     }
 }
 
-void Scheduler::updateIoBursts()
+void Scheduler::decrementIoBursts()
 {
     int i = 0;
     std::vector<Process> processes;
     while ( !isIoEmpty() )
     {
-        processes[i++] = ioTop();
+        Process process = ioTop();
         ioPop(); 
+        processes.push_back(process);
     }
-    for( i = 0; i < processes.size(); i++ )
+    for ( i = 0; i < processes.size(); i++ )
     {
-        processes[i].updateIoBurst();
+        processes[i].decrementIoBurst();
         ioPush(processes[i]);
     }
 }
@@ -334,26 +301,26 @@ void Scheduler::checkProcessFinishedCpu()
         Process cpuProcess = cpuTop();
         cpuPop();
 
-        if ( cpuProcess.cpuFlagSet() )
+        if ( cpuProcess.getCurrentCpuBurst() == 0 )
         {
-            cpuProcess.setCpuFlag(false);
+            cpuProcess.updateCpuBurst();
 
             if ( cpuProcess.isFinished() )
             {
                 finishedPush(cpuProcess);
-                printMessage(FINISHED, cpuProcess);
+                printMessage(FINISHED, cpuProcess, __LINE__);
             }
             else  
             {
                 ioPush(cpuProcess);
-                printMessage(TO_IO, cpuProcess);
+                printMessage(TO_IO, cpuProcess, __LINE__);
             }
         }
         else if ( cpuProcess.getTimeSlice() == 0 )
         {
             cpuProcess.newTimeSlice();
             expiredPush(cpuProcess);
-            printMessage(TO_EXPIRED, cpuProcess);
+            printMessage(TO_EXPIRED, cpuProcess, __LINE__);
         }
         else
         {
@@ -371,27 +338,29 @@ void Scheduler::checkProcessesFinishedIO()
         Process process = ioTop();
         ioPop(); 
 
-        if ( process.ioFlagSet() )
+        if ( process.getCurrentIoBurst() == 0 )
         {
-            process.setIoFlag(false);
+            process.updateIoBurst();
 
             if ( process.getTimeSlice() == 0 )
             {
                 process.newTimeSlice();
                 expiredPush(process);
-                printMessage(IO_TO_EXPIRED, process);
+                printMessage(IO_TO_EXPIRED, process, __LINE__);
             }
             else
             {
                 activePush(process);
-                printMessage(IO_TO_ACTIVE, process);
+                printMessage(IO_TO_ACTIVE, process, __LINE__);
             }
         }
         else
-            ioProcesses[i++] = process;
+        {
+            ioProcesses.push_back(process);
+        }
     }
 
-    for( i = 0; i < ioProcesses.size(); i++ )
+    for ( i = 0; i < ioProcesses.size(); i++ )
         ioPush(ioProcesses[i]);
 }
 
@@ -414,7 +383,7 @@ void Scheduler::swapQueuesIfRequired()
         if ( !isExpiredEmpty() )
         {
             swapActiveAndExpiredQueues();
-            printMessage(SWAPPED);
+            printMessage(SWAPPED, __LINE__);
         }
 }
 
@@ -425,8 +394,9 @@ void Scheduler::swapActiveAndExpiredQueues()
     *_expiredQueue = temp;
 }
 
-void Scheduler::printMessage(int messageType)
+void Scheduler::printMessage(int messageType, int line)
 {
+#ifdef ALLOWPRINTING
     std::string message;
     switch( messageType )
     {
@@ -434,31 +404,35 @@ void Scheduler::printMessage(int messageType)
             message = "[" + std::to_string(getClock()) + "] *** Queue Swap";
             break;
         default:
-            message = "something went wrong.";
+            message = "something went wrong. <Line: " + std::to_string(line) + ">";
             break;
     }
     std::cout << message << std::endl;
+#endif
 }
 
-void Scheduler::printMessage(int messageType, Process p1, Process p2)
+void Scheduler::printMessage(int messageType, Process p1, Process p2, int line)
 {
+#ifdef ALLOWPRINTING
     std::string message;
     message = "[" + std::to_string(getClock()) + "] ";
     message += "<" + std::to_string(p1.getPID()) + "> ";
-    switch( messageType )
+    switch ( messageType )
     {
         case PREEMPT:
             message += "Preempts Process " + std::to_string(p2.getPID());
             break;
         default:
-            message = "something went wrong.";
+            message = "something went wrong. <Line: " + std::to_string(line) + ">";
             break;
     }
     std::cout << message << std::endl;
+#endif
 }
 
-void Scheduler::printMessage(int messageType, Process p1)
+void Scheduler::printMessage(int messageType, Process p1, int line)
 {
+#ifdef ALLOWPRINTING
     std::string message;
     message = "[" + std::to_string(getClock()) + "] ";
     message += "<" + std::to_string(p1.getPID()) + "> ";
@@ -491,11 +465,90 @@ void Scheduler::printMessage(int messageType, Process p1)
             message += "Finishes IO and moves to the Ready Queue";
             break;
         default:
-            message = "something went wrong.";
+            message = "something went wrong. <Line: " + std::to_string(line) + ">";
             break;
     }
     std::cout << message << std::endl;
+#endif
 }
+
+void Scheduler::printProcessStatistics(Process process)
+{
+    std::string message;
+    message = "PID: <" + std::to_string(process.getPID()) + "> ";
+    message += "Statistics:\n";
+    message += "1. Turn around time: " + std::to_string(process.getTurnAroundTime()) + "\n";
+    message += "2. Total CPU time: " + std::to_string(process.getTotalCpuBurst()) + "\n";
+    message += "3. Waiting Time: " + std::to_string(process.getWaitingTime()) + "\n";
+    message += "4. Percentage of CPU utilization time: ";
+    std::cout << std::fixed << std::setprecision(1);
+    std::cout << message << round( process.getUtilizationTime() * 10.0) / 10.0 << std::endl;
+}
+
+double Scheduler::round(double value)
+{
+    if ( value < 0 )
+        return ceil(value - 0.5);
+    return floor(value + 0.5);
+}
+
+void Scheduler::printAverages(std::vector<Process> processes)
+{
+    double averageWaitingTime = 0.0;
+    double averageTurnAroundTime = 0.0;
+    double averageCpuUtilization = 0.0;
+
+    for ( int i = 0; i < processes.size(); i++ )
+    {
+        Process process = processes[i];
+        averageWaitingTime += process.getWaitingTime();
+        averageTurnAroundTime += process.getTurnAroundTime();
+        averageCpuUtilization += process.getUtilizationTime();
+    }
+
+    averageWaitingTime = round( averageWaitingTime / processes.size() * 1000.0 ) / 1000.0;
+    averageTurnAroundTime = round( averageTurnAroundTime / processes.size() * 1000.0 ) / 1000.0;
+    averageCpuUtilization = round( averageCpuUtilization / processes.size() * 1000.0 ) / 1000.0;
+
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << "OVERALL Statistics:" << std::endl;
+    std::cout << "Average Waiting Time: " << averageWaitingTime << std::endl;
+    std::cout << "Average Turnaround Time: " << averageTurnAroundTime << std::endl;
+    std::cout << "Average CPU Utilization Time: " << averageCpuUtilization << std::endl;
+}
+
+void Scheduler::printStatistics()
+{
+#ifdef ALLOWPRINTING
+    std::cout << std::endl;
+    std::cout << "========================== Overall Performance Output" << std::endl;
+    std::cout << "==========================" << std::endl;
+
+    std::vector<Process> processes;
+    while ( !isFinishedEmpty() )
+    {
+        processes.push_back(finishedTop());
+        finishedPop();
+    }
+
+    for ( int i = 0; i < processes.size(); i++ )
+    {
+        printProcessStatistics(processes[i]);
+        std::cout << " -------------------------------------------------- " << std::endl;
+    }
+
+    printAverages(processes);
+#endif
+}
+
+
+
+
+
+
+
+
+
 
 
 

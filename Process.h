@@ -10,6 +10,7 @@
 #define _PROCESS_H
 
 #include <vector>
+#include <algorithm>
 
 class Process
 {
@@ -24,9 +25,6 @@ public:
 
     int getArrivalTime();
 
-    int getStartTime();
-    void setStartTime(int);
-
     int getEndTime();
     void setEndTime(int);
 
@@ -36,21 +34,24 @@ public:
     int getTimeSlice();
     void newTimeSlice();
 
+    int getTotalCpuBurst();
+    int getTotalIoBurst();
+
     void updateCpuBurstAndTimeslice();
     int getCurrentCpuBurst();
-    int getTotalCpuBurst();
+    void updateCpuBurst();
 
     int getCurrentIoBurst();
     void updateIoBurst();
-    int getTotalIoBurst();
+    void decrementIoBurst();
+
+    int getTurnAroundTime();
+    int getWaitingTime();
+    double getUtilizationTime();
+
+    void calculateStatistics();
 
     bool isFinished();
-
-    bool cpuFlagSet();
-    bool ioFlagSet();
-
-    void setCpuFlag(bool);
-    void setIoFlag(bool);
 
     std::vector<int> getCpuBursts();
     std::vector<int> getIoBursts();
@@ -66,18 +67,19 @@ private:
 
     void decrementTimeSlice();
     void decrementCpuBurst();
-    void decrementIoBurst();
-
+    
     int calculateStaticPriority(int);
     int calculatePriority();
     int calculateBonus();
     int calculateTimeSlice();
     int calculateInitialTimeSlice(int);
+    void calculateTurnAroundTime();
+    void calculateWaitingTime();
+    void calculateUtilizationTime();
 
 private:
     int     _pid;
     int     _arrivalTime;
-    int     _startTime;
     int     _endTime;
     int     _staticPriority;
     int     _dynamicPriority;
@@ -88,11 +90,13 @@ private:
     int     _cpuIndex;
     int     _ioMaxIndex;
     int     _ioIndex;
-    bool    _cpuBurstFinishedFlag;
-    bool    _ioBurstFinishedFlag;
 
     int     _totalCpuBurst;
     int     _totalIoBurst;
+
+    int     _turnAroundTime;
+    int     _waitingTime;
+    double  _cpuUtilizationTime;
     
     std::vector<int> _cpuBursts;
     std::vector<int> _ioBursts;

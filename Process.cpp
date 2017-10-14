@@ -20,10 +20,7 @@ Process::Process(int pid,
     setArrivalTime(arrivalTime);
     setCpuBursts(cpuBursts);
     setIoBursts(ioBursts);
-    setStartTime(0);
     setEndTime(0);
-    setCpuFlag(false);
-    setIoFlag(false);
     _dynamicPriority = _staticPriority;
     _cpuMaxIndex = cpuBursts.size() - 1;
     _cpuIndex = 0;
@@ -52,16 +49,6 @@ int Process::getArrivalTime()
 void Process::setArrivalTime(int arrivalTime) 
 { 
     _arrivalTime = arrivalTime; 
-}
-
-int Process::getStartTime() 
-{ 
-    return _startTime; 
-}
-
-void Process::setStartTime(int startTime) 
-{ 
-    _startTime = startTime; 
 }
 
 int Process::getEndTime() 
@@ -158,44 +145,25 @@ void Process::decrementCpuBurst()
         _cpuBursts[_cpuIndex]--;
         _totalCpuBurst++;
     }
+}
 
+void Process::updateCpuBurst()
+{
     if ( getCurrentCpuBurst() == 0 && _cpuIndex < _cpuMaxIndex )
-    {
         _cpuIndex++;
-        setCpuFlag(true);
-    }
     else
         _isFinished = true;
 }
 
 void Process::updateIoBurst()
 {
-    decrementIoBurst();
+    if ( getCurrentIoBurst() == 0 && _ioIndex < _ioMaxIndex )
+        _ioIndex++;
 }
 
 bool Process::isFinished()
 {
     return _isFinished;
-}
-
-bool Process::cpuFlagSet()
-{
-    return _cpuBurstFinishedFlag;
-}
-
-void Process::setCpuFlag(bool flag)
-{
-    _cpuBurstFinishedFlag = flag;
-}
-
-bool Process::ioFlagSet()
-{
-    return _ioBurstFinishedFlag;
-}
-
-void Process::setIoFlag(bool flag)
-{
-    _ioBurstFinishedFlag = flag;
 }
 
 int Process::getCurrentIoBurst()
@@ -214,11 +182,6 @@ void Process::decrementIoBurst()
     {
         _ioBursts[_ioIndex]--;
         _totalIoBurst++;
-    }
-    if ( getCurrentIoBurst() == 0 && _ioIndex < _ioMaxIndex )
-    {
-        _ioIndex++;
-        setIoFlag(true);
     }
 }
 
@@ -257,6 +220,42 @@ int Process::calculateInitialTimeSlice(int priority)
     return (int)( ( ( 1 - ( priority / 150.0 ) ) * 395 + 0.5 ) + 5 );
 }
 
+int Process::getTurnAroundTime()
+{
+    return _turnAroundTime;
+}
+
+int Process::getWaitingTime()
+{
+    return _waitingTime;
+}
+
+double Process::getUtilizationTime()
+{
+    return _cpuUtilizationTime;
+}
+
+void Process::calculateStatistics()
+{
+    calculateTurnAroundTime();
+    calculateWaitingTime();
+    calculateUtilizationTime();
+}
+
+void Process::calculateTurnAroundTime()
+{
+    _turnAroundTime = getEndTime() - getArrivalTime();
+}
+
+void Process::calculateWaitingTime()
+{
+    _waitingTime = getTurnAroundTime() - getTotalCpuBurst() - getTotalIoBurst();
+}
+
+void Process::calculateUtilizationTime()
+{
+    _cpuUtilizationTime = ( (double)getTotalCpuBurst() / (double)getTurnAroundTime() ) * 100;
+}   
 
 
 
